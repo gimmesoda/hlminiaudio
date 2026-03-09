@@ -1,34 +1,52 @@
 package miniaudio.heaps;
 
+import haxe.io.Path;
 import hxd.fs.FileEntry;
-import hxd.res.Resource;
 
-class AudioBuffer extends Resource
+class AudioBuffer extends hxd.res.Sound
 {
-	private var loaded:Bool = false;
-
-	private var buffer:Miniaudio.Buffer;
+	var cachedData:Null<hxd.snd.Data>;
 
 	public function new(entry:FileEntry)
 	{
 		super(entry);
-
-		entry.watch(() ->
-		{
-			buffer.dispose();
-			loaded = false;
-		});
+		entry.watch(() -> cachedData = null);
 	}
 
-	public function load():Miniaudio.Buffer
+	override public function getData():hxd.snd.Data
 	{
-		if (!loaded)
-		{
-			buffer = Miniaudio.Buffer.fromBytes(entry.getBytes());
-			if (buffer == null)
-				throw '${entry.path}: ${Miniaudio.describeLastError()}';
-		}
+		if (cachedData != null)
+			return cachedData;
 
-		return buffer;
+		final bytes = entry.getBytes();
+		final ext = Path.extension(entry.path).toLowerCase();
+
+		cachedData = switch (ext)
+		{
+			case 'ogg', 'opus', 'flac', 'wav', 'mp3', 'aiff':
+				loadWithMiniaudio(bytes);
+			default:
+				super.getData();
+		};
+
+		if (cachedData == null)
+			throw '${entry.path}: ${miniaudio.Miniaudio.describeLastError()}';
+
+		return cachedData;
+	}
+
+	override public function dispose()
+	{
+		stop();
+		cachedData = null;
+	}
+
+	static function loadWithMiniaudio(bytes:haxe.io.Bytes):hxd.snd.Data
+	{
+		final decoded = miniaudio.Miniaudio.decodeToPCMFloat(bytes);
+		if (decoded == null)
+			return null;
+
+		return new AudioData(decoded.bytes, decoded.channels, decoded.sampleRate, decoded.samples, decoded.floatFormat);
 	}
 }

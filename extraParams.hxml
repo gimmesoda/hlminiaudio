@@ -1,1 +1,2 @@
+-cp C:/HaxeToolkit/haxe/lib/hlminiaudio/hlminiaudio/heaps_override
 --macro miniaudio.heaps.Macro.main()

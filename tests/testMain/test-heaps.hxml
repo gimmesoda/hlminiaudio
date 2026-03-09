@@ -1,0 +1,10 @@
+-cp .
+-cp src
+
+-lib hlminiaudio
+-lib heaps
+-lib hlsdl
+-D resourcesPath=audio
+
+-m TestHeaps
+-hl test-heaps.hl
