@@ -1,5 +1,9 @@
-﻿#define HL_NAME(n) miniaudio_##n
+#define HL_NAME(n) miniaudio_##n
 #include <hl.h>
+
+#ifdef _GUID
+#undef _GUID
+#endif
 
 #define STB_VORBIS_HEADER_ONLY
 #include "extras/stb_vorbis.c"
@@ -84,6 +88,49 @@ HL_PRIM ma_audio_buffer* HL_NAME(buffer_from_bytes)(vbyte* bytes, int size)
     }
 }
 DEFINE_PRIM(_BUFFER, buffer_from_bytes, _BYTES _I32);
+
+HL_PRIM ma_audio_buffer* HL_NAME(buffer_from_pcm_float)(vbyte* bytes, int size, int channels, int sampleRate)
+{
+    if (bytes == nullptr || size <= 0 || channels <= 0 || sampleRate <= 0)
+    {
+        lastResult = MA_INVALID_ARGS;
+        return nullptr;
+    }
+
+    int frameSize = channels * (int)sizeof(float);
+    if (frameSize <= 0 || (size % frameSize) != 0)
+    {
+        lastResult = MA_INVALID_ARGS;
+        return nullptr;
+    }
+
+    ma_uint64 frameCount = (ma_uint64)(size / frameSize);
+    float* data = (float*)ma_malloc((size_t)size, NULL);
+    if (data == nullptr)
+    {
+        lastResult = MA_OUT_OF_MEMORY;
+        return nullptr;
+    }
+
+    memcpy(data, bytes, (size_t)size);
+
+    ma_audio_buffer_config bufferConfig = ma_audio_buffer_config_init(
+        ma_format_f32,
+        (ma_uint32)channels,
+        frameCount,
+        data,
+        NULL
+    );
+
+    ma_audio_buffer* buffer;
+    lastResult = ma_audio_buffer_alloc_and_init(&bufferConfig, &buffer);
+    if (lastResult == MA_SUCCESS)
+        return buffer;
+
+    ma_free(data, NULL);
+    return nullptr;
+}
+DEFINE_PRIM(_BUFFER, buffer_from_pcm_float, _BYTES _I32 _I32 _I32);
 
 // ===== SOUND GROUP =====
 

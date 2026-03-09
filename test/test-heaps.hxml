@@ -1,0 +1,13 @@
+-cp .
+-cp ../src
+
+-lib heaps
+-lib hlsdl
+
+# requires hlopus - haxelib git hlopus https://github.com/gimmesoda/hlopus
+# -lib hlopus
+
+--macro miniaudio.heaps.Macro.main()
+
+-m TestHeaps
+-hl test-heaps.hl

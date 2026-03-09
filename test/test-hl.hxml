@@ -1,0 +1,8 @@
+-cp .
+-cp ../src
+
+# requires hlopus - haxelib git hlopus https://github.com/gimmesoda/hlopus
+# -lib hlopus
+
+-m Test
+-hl test.hl

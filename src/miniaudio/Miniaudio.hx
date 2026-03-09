@@ -9,7 +9,16 @@ abstract Buffer(BufferImpl) from BufferImpl to BufferImpl
 
 	public static inline function fromBytes(bytes:Bytes)
 	{
+		#if hlopus
+		if (isOpusStream(bytes))
+			return fromOpusBytes(bytes);
+		#end
 		return _fromBytes(bytes, bytes.length);
+	}
+
+	public static inline function fromPCMFloat(bytes:Bytes, channels:Int, sampleRate:Int)
+	{
+		return _fromPCMFloat(bytes, bytes.length, channels, sampleRate);
 	}
 
 	@:hlNative('miniaudio', 'buffer_from_bytes')
@@ -17,6 +26,44 @@ abstract Buffer(BufferImpl) from BufferImpl to BufferImpl
 	{
 		return null;
 	}
+
+	@:hlNative('miniaudio', 'buffer_from_pcm_float')
+	private static function _fromPCMFloat(bytes:hl.Bytes, size:Int, channels:Int, sampleRate:Int):Buffer
+	{
+		return null;
+	}
+
+	#if hlopus
+	private static function fromOpusBytes(bytes:Bytes):Buffer
+	{
+		var decoder = new hlopus.Decoder(bytes);
+		var pcm = decoder.decodeAll(hlopus.SampleFormat.F32);
+		return fromPCMFloat(pcm, decoder.channels, decoder.samplingRate);
+	}
+
+	private static function isOpusStream(bytes:Bytes):Bool
+	{
+		if (bytes.length < 36)
+			return false;
+
+		if (bytes.get(0) != 'O'.code || bytes.get(1) != 'g'.code || bytes.get(2) != 'g'.code || bytes.get(3) != 'S'.code)
+			return false;
+
+		var numSegments = bytes.get(26);
+		var dataOffset = 27 + numSegments;
+		if (bytes.length < dataOffset + 8)
+			return false;
+
+		return bytes.get(dataOffset) == 'O'.code
+			&& bytes.get(dataOffset + 1) == 'p'.code
+			&& bytes.get(dataOffset + 2) == 'u'.code
+			&& bytes.get(dataOffset + 3) == 's'.code
+			&& bytes.get(dataOffset + 4) == 'H'.code
+			&& bytes.get(dataOffset + 5) == 'e'.code
+			&& bytes.get(dataOffset + 6) == 'a'.code
+			&& bytes.get(dataOffset + 7) == 'd'.code;
+	}
+	#end
 }
 
 private typedef BufferImpl = hl.Abstract<'ma_audio_buffer*'>;
