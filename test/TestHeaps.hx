@@ -92,13 +92,13 @@ class TestHeaps extends hxd.App
 		currentBuffer = resource.to(miniaudio.heaps.AudioBuffer).load();
 		if (currentBuffer == null)
 		{
-			if (Path.extension(path).toLowerCase() == "opus")
-				label.text = "SKIP " + path + "\nOpus is not supported in this build";
-			else
-			{
-				failed = true;
-				label.text = "FAIL " + path + "\n" + Miniaudio.describeLastError();
-			}
+			#if hlopus
+			failed = true;
+			label.text = "FAIL " + path + "\n" + Miniaudio.describeLastError();
+			#else
+			label.text = "SKIP " + path + "\nOpus is not supported in this build";
+			#end
+
 			Sys.println(label.text);
 			index++;
 			playNext();
@@ -135,18 +135,17 @@ class TestHeaps extends hxd.App
 
 	function disposeCurrent()
 	{
-		// TODO
-		// if (currentSound != null)
-		// {
-		// 	currentSound.dispose();
-		// 	currentSound = null;
-		// }
+		if (currentSound != null)
+		{
+			currentSound.dispose();
+			currentSound = null;
+		}
 
-		// if (currentBuffer != null)
-		// {
-		// 	currentBuffer.dispose();
-		// 	currentBuffer = null;
-		// }
+		if (currentBuffer != null)
+		{
+			currentBuffer.dispose();
+			currentBuffer = null;
+		}
 	}
 
 	function showAndExit(message:String)
@@ -160,12 +159,11 @@ class TestHeaps extends hxd.App
 	{
 		disposeCurrent();
 
-		// TODO
-		// if (group != null)
-		// {
-		// 	group.dispose();
-		// 	group = null;
-		// }
+		if (group != null)
+		{
+			group.dispose();
+			group = null;
+		}
 
 		Miniaudio.uninit();
 		hxd.System.exit();

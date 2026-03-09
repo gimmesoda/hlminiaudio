@@ -53,9 +53,15 @@ function main()
 		final sound:Sound = new Sound(buffer, group);
 		if (sound == null)
 		{
+			#if hlopus
 			failed = true;
-			buffer.dispose();
 			Sys.println('FAIL ' + path + ': could not create sound');
+			#else
+			Sys.println("SKIP " + path + "\nhlopus is not installed!");
+			#end
+
+			buffer.dispose();
+
 			continue;
 		}
 
@@ -72,13 +78,11 @@ function main()
 			Sys.println('OK   ' + path);
 		}
 
-		// TODO
-		// sound.dispose();
-		// buffer.dispose();
+		sound.dispose();
+		buffer.dispose();
 	}
 
-	// TODO
-	// group.dispose();
+	group.dispose();
 
 	Miniaudio.uninit();
 

@@ -2,6 +2,12 @@ package miniaudio;
 
 import haxe.io.Bytes;
 
+enum abstract PanMode(Int) from Int to Int
+{
+	var Balance = 0;
+	var Pan = 1;
+}
+
 @:hlNative('miniaudio', 'buffer_')
 abstract Buffer(BufferImpl) from BufferImpl to BufferImpl
 {
@@ -73,15 +79,16 @@ abstract SoundGroup(SoundGroupImpl) from SoundGroupImpl to SoundGroupImpl
 {
 	public var volume(get, set):Float;
 	public var pan(get, set):Float;
-	// TODO: pan mode (??)
+	public var panMode(get, set):PanMode;
 	public var pitch(get, set):Float;
-
-	// TODO: spatialization (??)
+	public var spatializationEnabled(get, set):Bool;
 
 	public inline function new(?parent:SoundGroup)
 	{
 		this = _init(parent);
 	}
+
+	public function dispose() {}
 
 	public function start():Bool
 	{
@@ -119,6 +126,16 @@ abstract SoundGroup(SoundGroupImpl) from SoundGroupImpl to SoundGroupImpl
 		return 0;
 	}
 
+	private function get_panMode():PanMode
+	{
+		return Balance;
+	}
+
+	private function set_panMode(v:PanMode):PanMode
+	{
+		return v;
+	}
+
 	private function get_pitch():Float
 	{
 		return 0;
@@ -127,6 +144,16 @@ abstract SoundGroup(SoundGroupImpl) from SoundGroupImpl to SoundGroupImpl
 	private function set_pitch(v:Float):Float
 	{
 		return 0;
+	}
+
+	private function get_spatializationEnabled():Bool
+	{
+		return false;
+	}
+
+	private function set_spatializationEnabled(v:Bool):Bool
+	{
+		return v;
 	}
 }
 
@@ -137,9 +164,9 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl
 {
 	public var volume(get, set):Float;
 	public var pan(get, set):Float;
-	// TODO: pan mode (??)
+	public var panMode(get, set):PanMode;
 	public var pitch(get, set):Float;
-	// TODO: spatialization (??)
+	public var spatializationEnabled(get, set):Bool;
 	public var time(get, never):Float;
 
 	public inline function new(buffer:Buffer, ?parent:SoundGroup)
@@ -185,6 +212,16 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl
 		return 0;
 	}
 
+	private function get_panMode():PanMode
+	{
+		return Balance;
+	}
+
+	private function set_panMode(v:PanMode):PanMode
+	{
+		return v;
+	}
+
 	private function get_pitch():Float
 	{
 		return 0;
@@ -193,6 +230,16 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl
 	private function set_pitch(v:Float):Float
 	{
 		return 0;
+	}
+
+	private function get_spatializationEnabled():Bool
+	{
+		return false;
+	}
+
+	private function set_spatializationEnabled(v:Bool):Bool
+	{
+		return v;
 	}
 
 	private function get_time():Float

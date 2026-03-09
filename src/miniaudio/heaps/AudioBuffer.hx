@@ -5,7 +5,7 @@ import haxe.io.Path;
 import hxd.fs.FileEntry;
 import hxd.res.Resource;
 import hxd.snd.Data.SampleFormat;
-#if miniaudio_has_hlopus
+#if hlopus
 import hxd.fmt.opus.Data as OpusData;
 #end
 
@@ -57,7 +57,7 @@ class AudioBuffer extends Resource
 
 	private static function loadOpus(bytes:Bytes):Miniaudio.Buffer
 	{
-		#if miniaudio_has_hlopus
+		#if hlopus
 		final opus = new OpusData(bytes);
 		final pcm = opus.resample(opus.samplingRate, SampleFormat.F32, opus.channels);
 		final raw = Bytes.alloc(pcm.samples * pcm.channels * 4);

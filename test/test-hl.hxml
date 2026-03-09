@@ -1,7 +1,7 @@
 -cp .
 -cp ../src
 
-# requires hlopus - haxelib git hlopus https://github.com/gimmesoda/hlopus
+# optional for opus support - haxelib git hlopus https://github.com/gimmesoda/hlopus
 # -lib hlopus
 
 -m Test

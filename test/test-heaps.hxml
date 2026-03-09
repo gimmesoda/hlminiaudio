@@ -4,10 +4,10 @@
 -lib heaps
 -lib hlsdl
 
-# requires hlopus - haxelib git hlopus https://github.com/gimmesoda/hlopus
-# -lib hlopus
+# optional for opus support - haxelib git hlopus https://github.com/gimmesoda/hlopus
+-lib hlopus
 
---macro miniaudio.heaps.Macro.main()
+../extraParams.hxml
 
 -m TestHeaps
 -hl test-heaps.hl
