@@ -1,6 +1,5 @@
 import h2d.Text;
 import haxe.Timer;
-import haxe.io.Path;
 import miniaudio.Miniaudio;
 import miniaudio.Miniaudio.Buffer;
 import miniaudio.Miniaudio.Sound;
@@ -57,6 +56,7 @@ class TestHeaps extends hxd.App
 		}
 
 		group = new SoundGroup();
+
 		playNext();
 	}
 
@@ -88,8 +88,7 @@ class TestHeaps extends hxd.App
 		final path = files[index];
 		label.text = "Loading " + path;
 
-		final resource = hxd.res.Any.fromBytes(path, sys.io.File.getBytes(path));
-		currentBuffer = resource.to(miniaudio.heaps.AudioBuffer).load();
+		currentBuffer = Buffer.fromBytes(sys.io.File.getBytes(path));
 		if (currentBuffer == null)
 		{
 			#if hlopus
@@ -105,22 +104,21 @@ class TestHeaps extends hxd.App
 			return;
 		}
 
-		currentSound = new Sound(currentBuffer, group);
-		if (currentSound == null)
+		try
 		{
-			failed = true;
-			label.text = "FAIL " + path + "\nCould not create sound";
-			Sys.println(label.text);
-			disposeCurrent();
-			index++;
-			playNext();
-			return;
+			currentSound = new Sound(currentBuffer, group);
+			if (currentSound == null || !currentSound.start())
+				throw Miniaudio.describeLastError();
 		}
-
-		if (!currentSound.start())
+		catch (e)
 		{
+			#if hlopus
 			failed = true;
-			label.text = "FAIL " + path + "\n" + Miniaudio.describeLastError();
+			label.text = "FAIL " + path + "\n" + Std.string(e);
+			#else
+			label.text = "SKIP " + path + "\nOpus is not supported in this build";
+			#end
+
 			Sys.println(label.text);
 			disposeCurrent();
 			index++;
@@ -137,6 +135,7 @@ class TestHeaps extends hxd.App
 	{
 		if (currentSound != null)
 		{
+			currentSound.stop();
 			currentSound.dispose();
 			currentSound = null;
 		}
@@ -158,14 +157,13 @@ class TestHeaps extends hxd.App
 	function finish()
 	{
 		disposeCurrent();
-
 		if (group != null)
 		{
 			group.dispose();
 			group = null;
 		}
-
 		Miniaudio.uninit();
+
 		hxd.System.exit();
 	}
 }

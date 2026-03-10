@@ -1,13 +1,11 @@
 -cp .
--cp ../src
 
+-lib hlminiaudio
 -lib heaps
 -lib hlsdl
 
 # optional for opus support - haxelib git hlopus https://github.com/gimmesoda/hlopus
 -lib hlopus
-
-../extraParams.hxml
 
 -m TestHeaps
 -hl test-heaps.hl

@@ -45,23 +45,22 @@ function main()
 
 		if (buffer == null)
 		{
+			#if hlopus
 			failed = true;
 			Sys.println('FAIL ' + path + ': ' + Miniaudio.describeLastError());
+			#else
+			Sys.println("SKIP " + path + "\nhlopus is not installed!");
+			#end
+
 			continue;
 		}
 
 		final sound:Sound = new Sound(buffer, group);
 		if (sound == null)
 		{
-			#if hlopus
 			failed = true;
 			Sys.println('FAIL ' + path + ': could not create sound');
-			#else
-			Sys.println("SKIP " + path + "\nhlopus is not installed!");
-			#end
-
 			buffer.dispose();
-
 			continue;
 		}
 

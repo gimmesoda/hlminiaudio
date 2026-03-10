@@ -2,6 +2,15 @@ package miniaudio;
 
 import haxe.io.Bytes;
 
+typedef DecodedAudio =
+{
+	bytes:Bytes,
+	channels:Int,
+	sampleRate:Int,
+	samples:Int,
+	floatFormat:Bool,
+}
+
 enum abstract PanMode(Int) from Int to Int
 {
 	var Balance = 0;
@@ -27,6 +36,11 @@ abstract Buffer(BufferImpl) from BufferImpl to BufferImpl
 		return _fromPCMFloat(bytes, bytes.length, channels, sampleRate);
 	}
 
+	public static inline function fromPCM16(bytes:Bytes, channels:Int, sampleRate:Int)
+	{
+		return _fromPCM16(bytes, bytes.length, channels, sampleRate);
+	}
+
 	@:hlNative('miniaudio', 'buffer_from_bytes')
 	private static function _fromBytes(bytes:hl.Bytes, size:Int):Buffer
 	{
@@ -35,6 +49,12 @@ abstract Buffer(BufferImpl) from BufferImpl to BufferImpl
 
 	@:hlNative('miniaudio', 'buffer_from_pcm_float')
 	private static function _fromPCMFloat(bytes:hl.Bytes, size:Int, channels:Int, sampleRate:Int):Buffer
+	{
+		return null;
+	}
+
+	@:hlNative('miniaudio', 'buffer_from_pcm_s16')
+	private static function _fromPCM16(bytes:hl.Bytes, size:Int, channels:Int, sampleRate:Int):Buffer
 	{
 		return null;
 	}
@@ -186,6 +206,24 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl
 		return false;
 	}
 
+	@:hlNative('miniaudio', 'sound_seek_samples')
+	public function seekSamples(v:Int):Int
+	{
+		return v;
+	}
+
+	@:hlNative('miniaudio', 'sound_get_cursor_samples')
+	public function getCursorSamples():Int
+	{
+		return 0;
+	}
+
+	@:hlNative('miniaudio', 'sound_is_playing')
+	public function isPlaying():Bool
+	{
+		return false;
+	}
+
 	@:hlNative('miniaudio', 'sound_init')
 	private static function _init(buffer:Buffer, ?parent:SoundGroup):Sound
 	{
@@ -260,6 +298,44 @@ class Miniaudio
 
 	public static function uninit() {}
 
+	public static inline function decodeToPCMFloat(bytes:Bytes):DecodedAudio
+	{
+		final decoded = _decodeToPCMFloat(bytes, bytes.length);
+		final channels = _decodedChannels();
+		final sampleRate = _decodedSampleRate();
+		final samples = _decodedSamples();
+		final byteCount = samples * channels * 4;
+		if (decoded == null)
+			return null;
+
+		return {
+			bytes: @:privateAccess new Bytes(decoded, byteCount),
+			channels: channels,
+			sampleRate: sampleRate,
+			samples: samples,
+			floatFormat: true,
+		};
+	}
+
+	public static inline function decodeToPCM16(bytes:Bytes):DecodedAudio
+	{
+		final decoded = _decodeToPCM16(bytes, bytes.length);
+		final channels = _decodedChannels();
+		final sampleRate = _decodedSampleRate();
+		final samples = _decodedSamples();
+		final byteCount = samples * channels * 2;
+		if (decoded == null)
+			return null;
+
+		return {
+			bytes: @:privateAccess new Bytes(decoded, byteCount),
+			channels: channels,
+			sampleRate: sampleRate,
+			samples: samples,
+			floatFormat: false,
+		};
+	}
+
 	public static inline function describeLastError():String
 	{
 		return @:privateAccess String.fromUTF8(_describeLastError());
@@ -269,5 +345,35 @@ class Miniaudio
 	private static function _describeLastError():hl.Bytes
 	{
 		return null;
+	}
+
+	@:hlNative('miniaudio', 'decode_pcm_float')
+	private static function _decodeToPCMFloat(bytes:hl.Bytes, size:Int):hl.Bytes
+	{
+		return null;
+	}
+
+	@:hlNative('miniaudio', 'decode_pcm_s16')
+	private static function _decodeToPCM16(bytes:hl.Bytes, size:Int):hl.Bytes
+	{
+		return null;
+	}
+
+	@:hlNative('miniaudio', 'decoded_channels')
+	private static function _decodedChannels():Int
+	{
+		return 0;
+	}
+
+	@:hlNative('miniaudio', 'decoded_sample_rate')
+	private static function _decodedSampleRate():Int
+	{
+		return 0;
+	}
+
+	@:hlNative('miniaudio', 'decoded_samples')
+	private static function _decodedSamples():Int
+	{
+		return 0;
 	}
 }

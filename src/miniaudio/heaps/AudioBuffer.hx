@@ -1,71 +1,66 @@
 package miniaudio.heaps;
 
-import haxe.io.Bytes;
 import haxe.io.Path;
 import hxd.fs.FileEntry;
-import hxd.res.Resource;
-import hxd.snd.Data.SampleFormat;
 #if hlopus
 import hxd.fmt.opus.Data as OpusData;
 #end
 
-class AudioBuffer extends Resource
+class AudioBuffer extends hxd.res.Sound
 {
-	private var loaded:Bool = false;
-
-	private var buffer:Miniaudio.Buffer;
+	var cachedData:Null<hxd.snd.Data>;
 
 	public function new(entry:FileEntry)
 	{
 		super(entry);
-
-		entry.watch(() ->
-		{
-			if (buffer != null)
-				buffer.dispose();
-			buffer = null;
-			loaded = false;
-		});
+		entry.watch(() -> cachedData = null);
 	}
 
-	public function load():Miniaudio.Buffer
+	override public function getData():hxd.snd.Data
 	{
-		if (!loaded)
+		if (cachedData != null)
+			return cachedData;
+
+		final bytes = entry.getBytes();
+		final ext = Path.extension(entry.path).toLowerCase();
+
+		cachedData = switch (ext)
 		{
-			final ext = Path.extension(entry.path).toLowerCase();
-			buffer = switch (ext)
-			{
-				case 'opus':
-					loadOpus(entry.getBytes());
-				default:
-					Miniaudio.Buffer.fromBytes(entry.getBytes());
-			};
+			case 'opus':
+				loadOpus(bytes);
+			case 'ogg', 'flac', 'wav', 'mp3':
+				loadWithMiniaudio(bytes);
+			default:
+				super.getData();
+		};
 
-			if (buffer == null)
-			{
-				if (ext == 'opus')
-					return null;
+		if (cachedData == null)
+			throw '${entry.path}: ${miniaudio.Miniaudio.describeLastError()}';
 
-				throw '${entry.path}: ${Miniaudio.describeLastError()}';
-			}
-
-			loaded = true;
-		}
-
-		return buffer;
+		return cachedData;
 	}
 
-	private static function loadOpus(bytes:Bytes):Miniaudio.Buffer
+	override public function dispose()
+	{
+		stop();
+		cachedData = null;
+	}
+
+	static function loadWithMiniaudio(bytes:haxe.io.Bytes):hxd.snd.Data
+	{
+		final decoded = miniaudio.Miniaudio.decodeToPCMFloat(bytes);
+		if (decoded == null)
+			return null;
+
+		return new AudioData(decoded.bytes, decoded.channels, decoded.sampleRate, decoded.samples, decoded.floatFormat);
+	}
+
+	static function loadOpus(bytes:haxe.io.Bytes):hxd.snd.Data
 	{
 		#if hlopus
-		final opus = new OpusData(bytes);
-		final pcm = opus.resample(opus.samplingRate, SampleFormat.F32, opus.channels);
-		final raw = Bytes.alloc(pcm.samples * pcm.channels * 4);
-		pcm.decode(raw, 0, 0, pcm.samples);
-		return Miniaudio.Buffer.fromPCMFloat(raw, pcm.channels, pcm.samplingRate);
+		return new OpusData(bytes);
 		#else
-		Sys.println('Opus is not supported: install `hlopus` and rebuild.');
-		return null;
+		throw 'Opus is not supported: install `hlopus` and rebuild.';
 		#end
 	}
 }
