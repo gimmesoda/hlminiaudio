@@ -772,6 +772,38 @@ HL_PRIM ma_audio_buffer* HL_NAME(buffer_from_pcm_s16)(vbyte* bytes, int size, in
 }
 DEFINE_PRIM(_BUFFER, buffer_from_pcm_s16, _BYTES _I32 _I32 _I32);
 
+HL_PRIM int HL_NAME(buffer_get_length_samples)(ma_audio_buffer* buffer)
+{
+    ma_uint64 length = 0;
+    lastResult = ma_audio_buffer_get_length_in_pcm_frames(buffer, &length);
+    return lastResult == MA_SUCCESS ? (int)length : 0;
+}
+DEFINE_PRIM(_I32, buffer_get_length_samples, _BUFFER);
+
+HL_PRIM double HL_NAME(buffer_get_duration)(ma_audio_buffer* buffer)
+{
+    ma_uint64 length = 0;
+
+    lastResult = ma_audio_buffer_get_length_in_pcm_frames(buffer, &length);
+    if (lastResult != MA_SUCCESS || buffer->ref.sampleRate == 0)
+        return 0;
+
+    return ((double)length * 1000.0) / (double)buffer->ref.sampleRate;
+}
+DEFINE_PRIM(_F64, buffer_get_duration, _BUFFER);
+
+HL_PRIM double HL_NAME(buffer_get_duration_seconds)(ma_audio_buffer* buffer)
+{
+    ma_uint64 length = 0;
+
+    lastResult = ma_audio_buffer_get_length_in_pcm_frames(buffer, &length);
+    if (lastResult != MA_SUCCESS || buffer->ref.sampleRate == 0)
+        return 0;
+
+    return (double)length / (double)buffer->ref.sampleRate;
+}
+DEFINE_PRIM(_F64, buffer_get_duration_seconds, _BUFFER);
+
 // ===== SOUND GROUP =====
 
 HL_PRIM void HL_NAME(sound_group_dispose)(ma_sound_group* group)
@@ -901,6 +933,29 @@ HL_PRIM int HL_NAME(sound_seek_samples)(ma_sound* sound, int sample)
 }
 DEFINE_PRIM(_I32, sound_seek_samples, _SOUND _I32);
 
+HL_PRIM double HL_NAME(sound_seek_seconds)(ma_sound* sound, double seconds)
+{
+    if (seconds < 0)
+        seconds = 0;
+
+    lastResult = ma_sound_seek_to_second(sound, (float)seconds);
+    return lastResult == MA_SUCCESS ? seconds : -1;
+}
+DEFINE_PRIM(_F64, sound_seek_seconds, _SOUND _F64);
+
+HL_PRIM double HL_NAME(sound_seek_milliseconds)(ma_sound* sound, double milliseconds)
+{
+    double seconds;
+
+    if (milliseconds < 0)
+        milliseconds = 0;
+
+    seconds = milliseconds / 1000.0;
+    lastResult = ma_sound_seek_to_second(sound, (float)seconds);
+    return lastResult == MA_SUCCESS ? milliseconds : -1;
+}
+DEFINE_PRIM(_F64, sound_seek_milliseconds, _SOUND _F64);
+
 HL_PRIM int HL_NAME(sound_get_cursor_samples)(ma_sound* sound)
 {
     ma_uint64 cursor = 0;
@@ -961,6 +1016,70 @@ DEFINE_PRIM(_BOOL, sound_set_spatialization_enabled, _SOUND _BOOL);
 
 HL_PRIM double HL_NAME(sound_get_time)(ma_sound* sound)
 {
-    return ma_sound_get_time_in_milliseconds(sound);
+	ma_uint64 cursor = 0;
+	ma_uint32 sampleRate = 0;
+
+	lastResult = ma_sound_get_cursor_in_pcm_frames(sound, &cursor);
+	if (lastResult != MA_SUCCESS)
+		return 0;
+
+	lastResult = ma_sound_get_data_format(sound, NULL, NULL, &sampleRate, NULL, 0);
+	if (lastResult != MA_SUCCESS || sampleRate == 0)
+		return 0;
+
+	return ((double)cursor * 1000.0) / (double)sampleRate;
 }
 DEFINE_PRIM(_F64, sound_get_time, _SOUND);
+
+HL_PRIM double HL_NAME(sound_set_time)(ma_sound* sound, double seconds)
+{
+	return HL_NAME(sound_seek_milliseconds)(sound, seconds);
+}
+DEFINE_PRIM(_F64, sound_set_time, _SOUND _F64);
+
+HL_PRIM double HL_NAME(sound_get_time_seconds)(ma_sound* sound)
+{
+	ma_uint64 cursor = 0;
+	ma_uint32 sampleRate = 0;
+
+	lastResult = ma_sound_get_cursor_in_pcm_frames(sound, &cursor);
+	if (lastResult != MA_SUCCESS)
+		return 0;
+
+	lastResult = ma_sound_get_data_format(sound, NULL, NULL, &sampleRate, NULL, 0);
+	if (lastResult != MA_SUCCESS || sampleRate == 0)
+		return 0;
+
+	return (double)cursor / (double)sampleRate;
+}
+DEFINE_PRIM(_F64, sound_get_time_seconds, _SOUND);
+
+HL_PRIM double HL_NAME(sound_set_time_seconds)(ma_sound* sound, double seconds)
+{
+	return HL_NAME(sound_seek_seconds)(sound, seconds);
+}
+DEFINE_PRIM(_F64, sound_set_time_seconds, _SOUND _F64);
+
+HL_PRIM double HL_NAME(sound_get_duration)(ma_sound* sound)
+{
+    float length = 0;
+    lastResult = ma_sound_get_length_in_seconds(sound, &length);
+    return lastResult == MA_SUCCESS ? (double)length * 1000.0 : 0;
+}
+DEFINE_PRIM(_F64, sound_get_duration, _SOUND);
+
+HL_PRIM double HL_NAME(sound_get_duration_seconds)(ma_sound* sound)
+{
+    float length = 0;
+    lastResult = ma_sound_get_length_in_seconds(sound, &length);
+    return lastResult == MA_SUCCESS ? length : 0;
+}
+DEFINE_PRIM(_F64, sound_get_duration_seconds, _SOUND);
+
+HL_PRIM int HL_NAME(sound_get_length_samples)(ma_sound* sound)
+{
+    ma_uint64 length = 0;
+    lastResult = ma_sound_get_length_in_pcm_frames(sound, &length);
+    return lastResult == MA_SUCCESS ? (int)length : 0;
+}
+DEFINE_PRIM(_I32, sound_get_length_samples, _SOUND);

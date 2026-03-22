@@ -109,6 +109,12 @@ private function testBufferLifecycle(bytes:Bytes, label:String, group:SoundGroup
 
 	final sound = new Sound(buffer, group);
 	TestSupport.assert(sound != null, label + ': sound creation failed: ' + Miniaudio.describeLastError());
+	TestSupport.assert(buffer.lengthSamples > 0, label + ': buffer length should be positive');
+	TestSupport.assert(buffer.duration > 0, label + ': buffer duration should be positive');
+	TestSupport.assertNear(buffer.duration / 1000, buffer.durationSeconds, 0.02, label + ': buffer durationSeconds mismatch');
+	TestSupport.assertEquals(buffer.lengthSamples, sound.lengthSamples, label + ': sound length should match buffer');
+	TestSupport.assertNear(buffer.duration, sound.duration, 20.0, label + ': sound duration should match buffer');
+	TestSupport.assertNear(sound.duration / 1000, sound.durationSeconds, 0.02, label + ': sound durationSeconds mismatch');
 
 	sound.volume = 0.25;
 	TestSupport.assertNear(0.25, sound.volume, 1e-6, label + ': volume roundtrip failed');
@@ -129,8 +135,26 @@ private function testBufferLifecycle(bytes:Bytes, label:String, group:SoundGroup
 	TestSupport.assertNear(0, sound.pan, 1e-6, label + ': pan reset failed');
 	sound.volume = 1.0;
 	TestSupport.assertNear(1.0, sound.volume, 1e-6, label + ': volume reset failed');
+	TestSupport.assertNear(0, sound.time, 1e-6, label + ': initial time should be zero');
+	TestSupport.assertNear(0, sound.timeSeconds, 1e-6, label + ': initial timeSeconds should be zero');
 
 	TestSupport.assertEquals(0, sound.seekSamples(-32), label + ': negative seek should clamp to zero');
+	final seekSample = Std.int(sound.lengthSamples * 0.25);
+	TestSupport.assertEquals(seekSample, sound.seekSamples(seekSample), label + ': sample seek failed');
+	TestSupport.assert(sound.getCursorSamples() >= seekSample, label + ': sample seek cursor mismatch');
+	final seekTime = sound.duration * 0.5;
+	TestSupport.assertNear(seekTime, sound.seek(seekTime), 20.0, label + ': millisecond seek failed');
+	TestSupport.assertNear(seekTime, sound.time, 20.0, label + ': millisecond seek time mismatch');
+	final seekTimeSeconds = sound.durationSeconds * 0.25;
+	TestSupport.assertNear(seekTimeSeconds, sound.seekSeconds(seekTimeSeconds), 0.02, label + ': second seek failed');
+	TestSupport.assertNear(seekTimeSeconds, sound.timeSeconds, 0.03, label + ': second seek time mismatch');
+	final seekTimeMs = sound.duration * 0.75;
+	TestSupport.assertNear(seekTimeMs, sound.seekMs(seekTimeMs), 20.0, label + ': seekMs alias failed');
+	TestSupport.assertNear(seekTimeMs, sound.time, 20.0, label + ': seekMs alias time mismatch');
+	sound.time = 0;
+	TestSupport.assertNear(0, sound.time, 0.02, label + ': time setter should seek to zero');
+	sound.timeSeconds = 0;
+	TestSupport.assertNear(0, sound.timeSeconds, 0.02, label + ': timeSeconds setter should seek to zero');
 	TestSupport.assert(sound.getCursorSamples() >= 0, label + ': cursor must be non-negative');
 	TestSupport.assert(!sound.isPlaying(), label + ': fresh sound should not be playing');
 	TestSupport.assert(sound.start(), label + ': start failed');
@@ -138,7 +162,7 @@ private function testBufferLifecycle(bytes:Bytes, label:String, group:SoundGroup
 
 	final startedCursor = sound.getCursorSamples();
 	TestSupport.assert(waitUntil(() -> return sound.getCursorSamples() > startedCursor, 0.5), label + ': playback cursor did not advance');
-	TestSupport.assert(waitUntil(() -> return !sound.isPlaying(), sound.time + 1.0), label + ': sound did not finish playback');
+	TestSupport.assert(waitUntil(() -> return !sound.isPlaying(), sound.durationSeconds + 1.0), label + ': sound did not finish playback');
 
 	sound.dispose();
 	buffer.dispose();

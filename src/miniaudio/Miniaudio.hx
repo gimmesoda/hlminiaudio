@@ -26,6 +26,10 @@ enum abstract PanMode(Int) from Int to Int
 @:hlNative('miniaudio', 'buffer_')
 abstract Buffer(BufferImpl) from BufferImpl to BufferImpl
 {
+	public var lengthSamples(get, never):Int;
+	public var duration(get, never):Float;
+	public var durationSeconds(get, never):Float;
+
 	public function dispose() {}
 
 	public static inline function fromBytes(bytes:Bytes)
@@ -59,6 +63,21 @@ abstract Buffer(BufferImpl) from BufferImpl to BufferImpl
 	private static function _fromPCM16(bytes:hl.Bytes, size:Int, channels:Int, sampleRate:Int):Buffer
 	{
 		return null;
+	}
+
+	private function get_lengthSamples():Int
+	{
+		return 0;
+	}
+
+	private function get_duration():Float
+	{
+		return 0;
+	}
+
+	private function get_durationSeconds():Float
+	{
+		return 0;
 	}
 }
 
@@ -157,7 +176,11 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl
 	public var panMode(get, set):PanMode;
 	public var pitch(get, set):Float;
 	public var spatializationEnabled(get, set):Bool;
-	public var time(get, never):Float;
+	public var time(get, set):Float;
+	public var timeSeconds(get, set):Float;
+	public var duration(get, never):Float;
+	public var durationSeconds(get, never):Float;
+	public var lengthSamples(get, never):Int;
 
 	public inline function new(buffer:Buffer, ?parent:SoundGroup)
 	{
@@ -178,6 +201,42 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl
 
 	@:hlNative('miniaudio', 'sound_seek_samples')
 	public function seekSamples(v:Int):Int
+	{
+		return v;
+	}
+
+	@:hlNative('miniaudio', 'sound_seek_milliseconds')
+	public function seek(v:Float):Float
+	{
+		return v;
+	}
+
+	@:hlNative('miniaudio', 'sound_seek_seconds')
+	public function seekSeconds(v:Float):Float
+	{
+		return v;
+	}
+
+	@:hlNative('miniaudio', 'sound_seek_milliseconds')
+	public function seekMs(v:Float):Float
+	{
+		return v;
+	}
+
+	@:hlNative('miniaudio', 'sound_set_time')
+	private function _setTime(v:Float):Float
+	{
+		return v;
+	}
+
+	@:hlNative('miniaudio', 'sound_get_time_seconds')
+	private function _getTimeSeconds():Float
+	{
+		return 0;
+	}
+
+	@:hlNative('miniaudio', 'sound_set_time_seconds')
+	private function _setTimeSeconds(v:Float):Float
 	{
 		return v;
 	}
@@ -263,6 +322,42 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl
 
 	@:noCompletion
 	private function get_time():Float
+	{
+		return 0;
+	}
+
+	@:noCompletion
+	private function set_time(v:Float):Float
+	{
+		return _setTime(v);
+	}
+
+	@:noCompletion
+	private function get_timeSeconds():Float
+	{
+		return _getTimeSeconds();
+	}
+
+	@:noCompletion
+	private function set_timeSeconds(v:Float):Float
+	{
+		return _setTimeSeconds(v);
+	}
+
+	@:noCompletion
+	private function get_duration():Float
+	{
+		return 0;
+	}
+
+	@:noCompletion
+	private function get_durationSeconds():Float
+	{
+		return 0;
+	}
+
+	@:noCompletion
+	private function get_lengthSamples():Int
 	{
 		return 0;
 	}
