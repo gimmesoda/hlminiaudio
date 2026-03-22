@@ -5,30 +5,13 @@ import hxd.res.Resource;
 
 class AudioBuffer extends Resource
 {
-	private var loaded:Bool = false;
+	private var buffer:Null<Miniaudio.Buffer>;
 
-	private var buffer:Miniaudio.Buffer;
-
-	public function new(entry:FileEntry)
+	public function getBuffer():Miniaudio.Buffer
 	{
-		super(entry);
-
-		entry.watch(() ->
-		{
-			buffer.dispose();
-			loaded = false;
-		});
-	}
-
-	public function load():Miniaudio.Buffer
-	{
-		if (!loaded)
-		{
-			buffer = Miniaudio.Buffer.fromBytes(entry.getBytes());
-			if (buffer == null)
+		buffer ??= Miniaudio.Buffer.fromBytes(entry.getBytes());
+		if (buffer == null)
 				throw '${entry.path}: ${Miniaudio.describeLastError()}';
-		}
-
 		return buffer;
 	}
 }
