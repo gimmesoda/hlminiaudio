@@ -2,7 +2,7 @@
 	"name": "hlminiaudio",
 	"license": "MIT",
 	"releasenote": "",
-	"contributors": ["gimmesoda", "D_TWO_TWO"],
+	"contributors": ["dtwotwo", "gimmesoda"],
 	"version": "1.0.0",
 	"classPath": "src"
 }
