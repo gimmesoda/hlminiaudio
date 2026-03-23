@@ -27,7 +27,7 @@ typedef FixtureIssue =
 class TestSupport
 {
 	public static final fixtures = loadFixtures();
-	public static final supportedExtensions = ['wav', 'mp3', 'flac', 'ogg', 'opus'];
+	public static final supportedExtensions = ['aiff', 'wav', 'mp3', 'flac', 'ogg', 'opus'];
 
 	static function loadFixtures():Array<String>
 	{

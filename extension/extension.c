@@ -1,5 +1,6 @@
 #define HL_NAME(n) miniaudio_##n
 #include <hl.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef _GUID
@@ -20,6 +21,16 @@
 ma_engine engine;
 ma_result lastResult;
 int lastDecodedChannels, lastDecodedSampleRate, lastDecodedSamples;
+
+typedef struct sound_callback_entry
+{
+    ma_sound* sound;
+    vclosure* callback;
+    volatile int pending;
+    struct sound_callback_entry* next;
+} sound_callback_entry;
+
+static sound_callback_entry* sound_callbacks = NULL;
 
 typedef struct
 {
@@ -889,10 +900,58 @@ DEFINE_PRIM(_BOOL, sound_group_set_spatialization_enabled, _GROUP _BOOL);
 
 HL_PRIM void HL_NAME(sound_dispose)(ma_sound* sound)
 {
+    sound_callback_entry** entry = &sound_callbacks;
+
+    lastResult = ma_sound_set_end_callback(sound, NULL, NULL);
+
+    while (*entry != NULL)
+    {
+        if ((*entry)->sound == sound)
+        {
+            sound_callback_entry* current = *entry;
+            *entry = current->next;
+            hl_remove_root(&current->callback);
+            free(current);
+            break;
+        }
+
+        entry = &(*entry)->next;
+    }
+
     ma_sound_uninit(sound);
     ma_free(sound, NULL);
 }
 DEFINE_PRIM(_VOID, sound_dispose, _SOUND);
+
+static sound_callback_entry* sound_get_callback_entry(ma_sound* sound, bool create)
+{
+    sound_callback_entry* entry = sound_callbacks;
+
+    while (entry != NULL)
+    {
+        if (entry->sound == sound)
+            return entry;
+
+        entry = entry->next;
+    }
+
+    if (!create)
+        return NULL;
+
+    entry = (sound_callback_entry*)calloc(1, sizeof(sound_callback_entry));
+    entry->sound = sound;
+    hl_add_root(&entry->callback);
+    entry->next = sound_callbacks;
+    sound_callbacks = entry;
+    return entry;
+}
+
+static void sound_end_callback(void* pUserData, ma_sound* pSound)
+{
+    sound_callback_entry* entry = (sound_callback_entry*)pUserData;
+    if (entry != NULL && entry->sound == pSound && entry->callback != NULL)
+        entry->pending = 1;
+}
 
 HL_PRIM ma_sound* HL_NAME(sound_init)(ma_audio_buffer* buffer, ma_sound_group* parent)
 {
@@ -969,6 +1028,28 @@ HL_PRIM bool HL_NAME(sound_is_playing)(ma_sound* sound)
     return ma_sound_is_playing(sound) == MA_TRUE;
 }
 DEFINE_PRIM(_BOOL, sound_is_playing, _SOUND);
+
+HL_PRIM void HL_NAME(sound_set_end_callback)(ma_sound* sound, vclosure* callback)
+{
+    sound_callback_entry* entry = sound_get_callback_entry(sound, true);
+    entry->callback = callback;
+    entry->pending = 0;
+    lastResult = ma_sound_set_end_callback(sound, callback == NULL ? NULL : sound_end_callback, callback == NULL ? NULL : entry);
+}
+DEFINE_PRIM(_VOID, sound_set_end_callback, _SOUND _FUN(_VOID, _NO_ARG));
+
+HL_PRIM void HL_NAME(sound_clear_end_callback)(ma_sound* sound)
+{
+    sound_callback_entry* entry = sound_get_callback_entry(sound, false);
+    if (entry != NULL)
+    {
+        entry->callback = NULL;
+        entry->pending = 0;
+    }
+
+    lastResult = ma_sound_set_end_callback(sound, NULL, NULL);
+}
+DEFINE_PRIM(_VOID, sound_clear_end_callback, _SOUND);
 
 #undef GET_SET_FLOAT
 #define GET_SET_FLOAT(n) HL_PRIM double HL_NAME(sound_get_##n)(ma_sound* sound) \
@@ -1083,3 +1164,25 @@ HL_PRIM int HL_NAME(sound_get_length_samples)(ma_sound* sound)
     return lastResult == MA_SUCCESS ? (int)length : 0;
 }
 DEFINE_PRIM(_I32, sound_get_length_samples, _SOUND);
+
+HL_PRIM int HL_NAME(update)()
+{
+    sound_callback_entry* entry = sound_callbacks;
+    int dispatched = 0;
+
+    while (entry != NULL)
+    {
+        if (entry->pending && entry->callback != NULL)
+        {
+            bool isException = false;
+            entry->pending = 0;
+            hl_dyn_call_safe(entry->callback, NULL, 0, &isException);
+            dispatched++;
+        }
+
+        entry = entry->next;
+    }
+
+    return dispatched;
+}
+DEFINE_PRIM(_I32, update, _NO_ARG);

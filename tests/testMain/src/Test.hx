@@ -157,12 +157,18 @@ private function testBufferLifecycle(bytes:Bytes, label:String, group:SoundGroup
 	TestSupport.assertNear(0, sound.timeSeconds, 0.02, label + ': timeSeconds setter should seek to zero');
 	TestSupport.assert(sound.getCursorSamples() >= 0, label + ': cursor must be non-negative');
 	TestSupport.assert(!sound.isPlaying(), label + ': fresh sound should not be playing');
+	var completed = 0;
+	sound.setOnComplete(() -> completed++);
 	TestSupport.assert(sound.start(), label + ': start failed');
 	TestSupport.assert(waitUntil(() -> return sound.isPlaying(), 0.25), label + ': sound never entered playing state');
 
 	final startedCursor = sound.getCursorSamples();
 	TestSupport.assert(waitUntil(() -> return sound.getCursorSamples() > startedCursor, 0.5), label + ': playback cursor did not advance');
 	TestSupport.assert(waitUntil(() -> return !sound.isPlaying(), sound.durationSeconds + 1.0), label + ': sound did not finish playback');
+	TestSupport.assert(waitUntil(() -> return completed == 1, 0.25), label + ': completion callback did not fire');
+	Miniaudio.update();
+	TestSupport.assertEquals(1, completed, label + ': completion callback should fire once');
+	sound.clearOnComplete();
 
 	sound.dispose();
 	buffer.dispose();
@@ -173,11 +179,13 @@ private function waitUntil(check:Void->Bool, timeoutSeconds:Float):Bool
 	final deadline = haxe.Timer.stamp() + timeoutSeconds;
 	while (haxe.Timer.stamp() < deadline)
 	{
+		Miniaudio.update();
 		if (check())
 			return true;
 		Sys.sleep(0.01);
 	}
 
+	Miniaudio.update();
 	return check();
 }
 

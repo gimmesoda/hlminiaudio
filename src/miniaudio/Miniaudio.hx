@@ -199,6 +199,12 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl
 		return false;
 	}
 
+	@:hlNative('miniaudio', 'sound_set_end_callback')
+	public function setOnComplete(callback:Void->Void):Void {}
+
+	@:hlNative('miniaudio', 'sound_clear_end_callback')
+	public function clearOnComplete():Void {}
+
 	@:hlNative('miniaudio', 'sound_seek_samples')
 	public function seekSamples(v:Int):Int
 	{
@@ -374,6 +380,11 @@ class Miniaudio
 	}
 
 	public static function uninit() {}
+
+	public static function update():Int
+	{
+		return 0;
+	}
 
 	public static inline function decodeToPCMFloat(bytes:Bytes):DecodedAudio
 	{
