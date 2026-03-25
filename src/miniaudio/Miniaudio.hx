@@ -69,7 +69,7 @@ abstract Buffer(BufferImpl) from BufferImpl to BufferImpl {
 	}
 }
 
-private typedef BufferImpl = hl.Abstract<"ma_audio_buffer*">;
+private typedef BufferImpl = hl.Abstract<"ma_audio_buffer">;
 
 @:hlNative("miniaudio", "sound_group_")
 abstract SoundGroup(SoundGroupImpl) from SoundGroupImpl to SoundGroupImpl {
@@ -139,7 +139,7 @@ abstract SoundGroup(SoundGroupImpl) from SoundGroupImpl to SoundGroupImpl {
 	}
 }
 
-private typedef SoundGroupImpl = hl.Abstract<"ma_sound_group*">;
+private typedef SoundGroupImpl = hl.Abstract<"ma_sound_group">;
 
 @:hlNative("miniaudio", "sound_")
 abstract Sound(SoundImpl) from SoundImpl to SoundImpl {
@@ -311,7 +311,7 @@ abstract Sound(SoundImpl) from SoundImpl to SoundImpl {
 	}
 }
 
-private typedef SoundImpl = hl.Abstract<"ma_sound*">;
+private typedef SoundImpl = hl.Abstract<"ma_sound">;
 
 @:hlNative("miniaudio")
 class Miniaudio {

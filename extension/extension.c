@@ -1,6 +1,5 @@
 #define HL_NAME(n) miniaudio_##n
 #include <hl.h>
-#include <stdlib.h>
 #include <string.h>
 
 #ifdef _GUID
@@ -14,9 +13,9 @@
 #include "extras/decoders/libopus/miniaudio_libopus.h"
 #include "extras/decoders/libvorbis/miniaudio_libvorbis.h"
 
-#define _BUFFER _ABSTRACT(ma_audio_buffer*)
-#define _SOUND _ABSTRACT(ma_sound*)
-#define _GROUP _ABSTRACT(ma_sound_group*)
+#define _BUFFER _ABSTRACT(ma_audio_buffer)
+#define _SOUND _ABSTRACT(ma_sound)
+#define _GROUP _ABSTRACT(ma_sound_group)
 
 ma_engine engine;
 ma_result lastResult;
