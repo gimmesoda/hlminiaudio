@@ -3,7 +3,7 @@
 		"character": "tab"
 	},
 	"lineEnds": {
-		"leftCurly": "both",
+		"leftCurly": "after",
 		"rightCurly": "both"
 	},
 	"sameLine": {

@@ -1,0 +1,7 @@
+-cp .
+-cp src
+
+-lib hlminiaudio
+
+-m Test
+-hl test.hl

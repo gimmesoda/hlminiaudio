@@ -1,0 +1,103 @@
+name: Build Windows Release
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - name: Download HashLink
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/HaxeFoundation/hashlink/releases/latest'
+          $asset = $release.assets | Where-Object { $_.name -like 'hashlink-*-win.zip' } | Select-Object -First 1
+          if (-not $asset) {
+            throw 'Could not find a Windows HashLink release asset.'
+          }
+
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile 'hashlink-win.zip'
+          Expand-Archive -LiteralPath 'hashlink-win.zip' -DestinationPath 'hashlink' -Force
+
+          $hashlinkDir = Get-ChildItem -Path 'hashlink' -Directory | Select-Object -First 1
+          if (-not $hashlinkDir) {
+            throw 'Could not locate the extracted HashLink directory.'
+          }
+
+          "HASHLINK=$($hashlinkDir.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Configure CMake
+        run: cmake --preset release
+
+      - name: Build release
+        run: cmake --build out/build/release --config Release
+
+      - name: Package release files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path 'dist/native' | Out-Null
+          Copy-Item 'out/build/release/extension/miniaudio.hdll' 'dist/native/miniaudio.hdll'
+          Copy-Item 'out/build/release/extension/miniaudio.lib' 'dist/native/miniaudio.lib'
+
+      - name: Verify packaged files
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'dist/native/miniaudio.hdll')) {
+            throw 'Missing dist/native/miniaudio.hdll'
+          }
+          if (-not (Test-Path 'dist/native/miniaudio.lib')) {
+            throw 'Missing dist/native/miniaudio.lib'
+          }
+
+      - name: Create release zip
+        shell: pwsh
+        run: |
+          if (Test-Path 'hlminiaudio-windows.zip') {
+            Remove-Item 'hlminiaudio-windows.zip' -Force
+          }
+          Compress-Archive -Path 'dist/native/*' -DestinationPath 'hlminiaudio-windows.zip'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: hlminiaudio-windows
+          path: dist/native
+
+      - name: Update nightly release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: andelf/nightly-release@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly
+          name: Nightly Release
+          body: |
+            Automated nightly Windows build of `hlminiaudio`.
+
+            Download `hlminiaudio-windows.zip` and extract it where you want to keep the native files.
+          files: |
+            hlminiaudio-windows.zip
