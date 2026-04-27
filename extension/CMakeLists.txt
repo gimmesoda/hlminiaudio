@@ -115,21 +115,34 @@ if(NOT TARGET opusfile)
 	endif()
 endif()
 
-add_library(extension SHARED "extension.c")
+if (WASI)
+	add_executable(extension "extension_js.c")
+	set_target_properties(extension PROPERTIES SUFFIX ".js")
+	target_link_options(extension PRIVATE
+		-sWASM=1
+		-sMODULARIZE=1
+		"-sEXPORT_NAME=MiniaudioModule"
+		-sALLOW_MEMORY_GROWTH=1
+		"-sEXPORTED_FUNCTIONS=['_ma_js_init','_ma_js_uninit','_ma_js_describe_last_error','_ma_js_buffer_dispose','_ma_js_buffer_from_bytes','_ma_js_buffer_from_pcm_float','_ma_js_buffer_from_pcm_s16','_ma_js_buffer_get_length_samples','_ma_js_buffer_get_duration','_ma_js_buffer_get_duration_seconds','_ma_js_decode_pcm_float','_ma_js_decode_pcm_s16','_ma_js_decoded_channels','_ma_js_decoded_sample_rate','_ma_js_decoded_samples','_ma_js_sound_group_init','_ma_js_sound_group_dispose','_ma_js_sound_group_start','_ma_js_sound_group_stop','_ma_js_sound_group_get_volume','_ma_js_sound_group_set_volume','_ma_js_sound_group_get_pan','_ma_js_sound_group_set_pan','_ma_js_sound_group_get_pan_mode','_ma_js_sound_group_set_pan_mode','_ma_js_sound_group_get_pitch','_ma_js_sound_group_set_pitch','_ma_js_sound_group_get_spatialization_enabled','_ma_js_sound_group_set_spatialization_enabled','_ma_js_sound_init','_ma_js_sound_dispose','_ma_js_sound_start','_ma_js_sound_stop','_ma_js_sound_seek_samples','_ma_js_sound_seek_seconds','_ma_js_sound_seek_milliseconds','_ma_js_sound_get_cursor_samples','_ma_js_sound_is_playing','_ma_js_sound_get_volume','_ma_js_sound_set_volume','_ma_js_sound_get_pan','_ma_js_sound_set_pan','_ma_js_sound_get_pan_mode','_ma_js_sound_set_pan_mode','_ma_js_sound_get_pitch','_ma_js_sound_set_pitch','_ma_js_sound_get_spatialization_enabled','_ma_js_sound_set_spatialization_enabled','_ma_js_sound_get_time','_ma_js_sound_set_time','_ma_js_sound_get_time_seconds','_ma_js_sound_set_time_seconds','_ma_js_sound_get_duration','_ma_js_sound_get_duration_seconds','_ma_js_sound_get_length_samples','_ma_js_sound_set_end_callback_js','_ma_js_sound_clear_end_callback','_ma_js_update','_malloc','_free']"
+		"-sEXPORTED_RUNTIME_METHODS=['ccall','getValue','UTF8ToString','HEAPU8']"
+	)
+else()
+	add_library(extension SHARED "extension.c")
+	set_target_properties(extension PROPERTIES SUFFIX ".hdll")
+endif()
 
 if(CMAKE_VERSION VERSION_GREATER 3.12)
 	set_property(TARGET extension PROPERTY C_STANDARD 99)
 	set_property(TARGET extension PROPERTY C_STANDARD_REQUIRED ON)
 endif()
 
-set_target_properties(extension PROPERTIES
-	OUTPUT_NAME "miniaudio"
-	SUFFIX ".hdll"
-)
+set_target_properties(extension PROPERTIES OUTPUT_NAME "miniaudio")
 
-if(WIN32)
-	target_include_directories(extension PRIVATE "$ENV{HASHLINK}/include")
-	target_link_libraries(extension PRIVATE "$ENV{HASHLINK}/libhl.lib")
+if (NOT WASI)
+	if (WIN32)
+		target_include_directories(extension PRIVATE "$ENV{HASHLINK}/include")
+		target_link_libraries(extension PRIVATE "$ENV{HASHLINK}/libhl.lib")
+	endif()
 endif()
 
 add_subdirectory("lib/miniaudio")
